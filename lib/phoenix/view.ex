@@ -140,6 +140,12 @@ defmodule Phoenix.View do
 
         @doc "The resource name, as an atom, for this view"
         def __resource__, do: @view_resource
+
+        def default_assigns(assigns) do
+          %{}
+        end
+
+        defoverridable [default_assigns: 1]
       end
     else
       raise "expected :root to be given as an option"
@@ -188,6 +194,7 @@ defmodule Phoenix.View do
   def render(module, template, assigns) do
     assigns
     |> to_map()
+    |> Map.merge(module.default_assigns(assigns), fn _k, v1, _v2 -> v1 end)
     |> Map.pop(:layout, false)
     |> render_within(module, template)
   end
@@ -204,7 +211,9 @@ defmodule Phoenix.View do
   end
 
   defp render_layout(inner_content, layout_mod, layout_tpl, assigns) do
-    assigns = Map.put(assigns, :inner, inner_content)
+    assigns = assigns
+    |> Map.put(:inner, inner_content)
+    |> Map.merge(layout_mod.default_assigns(assigns), fn _k, v1, _v2 -> v1 end)
     layout_mod.render(layout_tpl, assigns)
   end
 
